@@ -321,15 +321,15 @@ function pct(n) { return (n*100).toFixed(1)+'%'; }
 const WIDGET_DEFS = {
   milestones: { title:'Net Worth Milestones', x:0,y:0,w:12,h:2,
     html:`<div class="wbody"><div class="ms-grid">
-      <div class="ms-cell"><div class="ms-yr">Year 10</div><div class="ms-val" id="kpi-yr10">—</div></div>
-      <div class="ms-cell"><div class="ms-yr">Year 20</div><div class="ms-val" id="kpi-yr20">—</div></div>
-      <div class="ms-cell"><div class="ms-yr">Year 30</div><div class="ms-val" id="kpi-yr30">—</div></div>
+      <div class="ms-cell"><div class="ms-yr" id="ms-lbl-10">—</div><div class="ms-val" id="kpi-yr10">—</div></div>
+      <div class="ms-cell"><div class="ms-yr" id="ms-lbl-20">—</div><div class="ms-val" id="kpi-yr20">—</div></div>
+      <div class="ms-cell"><div class="ms-yr" id="ms-lbl-last">—</div><div class="ms-val" id="kpi-yr30">—</div></div>
     </div></div>` },
   chart: { title:'Net Worth Projection', x:0,y:2,w:7,h:7,
     html:`<div class="wbody"><canvas id="netWorthChart"></canvas></div>` },
   table: { title:'Year-by-Year Breakdown', x:7,y:2,w:5,h:7,
     html:`<div class="wbody nopad"><div class="table-scroll"><table>
-      <thead><tr><th>Year</th><th>Gross</th><th>Take-Home</th><th>Expenses</th><th>Savings</th><th>Inv. Gains</th><th>Net Worth</th></tr></thead>
+      <thead><tr><th>Year</th><th>Age</th><th>Gross</th><th>Take-Home</th><th>Expenses</th><th>Savings</th><th>Inv. Gains</th><th>Net Worth</th></tr></thead>
       <tbody id="tableBody"></tbody></table></div></div>` },
   taxes: { title:'Year-1 Tax Breakdown', x:0,y:9,w:5,h:4,
     html:`<div class="wbody"><div class="tax-bars" id="taxBars"></div></div>` },
@@ -460,6 +460,11 @@ function resetLayout() {
 }
 
 // ─── CHART HELPERS ───────────────────────────────────────────────────────────
+const START_YEAR = new Date().getFullYear(); // 2026
+const START_AGE  = 32;
+function calYear(rowYear) { return START_YEAR + rowYear - 1; }
+function calAge(rowYear)  { return START_AGE  + rowYear - 1; }
+
 function resizeCharts() { Object.values(charts).forEach(c => c?.resize()); }
 const chartOpts = (extraOpts={}) => ({
   responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
@@ -489,9 +494,13 @@ function renderWidget(id) {
 function renderMilestones() {
   if (!lastRows.length) return;
   const yr = n => lastRows[Math.min(n-1, lastRows.length-1)];
-  document.getElementById('kpi-yr10').textContent = fmt(yr(10).nw);
-  document.getElementById('kpi-yr20').textContent = fmt(yr(20).nw);
-  document.getElementById('kpi-yr30').textContent = fmt(lastRows[lastRows.length-1].nw);
+  const r10  = yr(10), r20 = yr(20), rN = lastRows[lastRows.length-1];
+  document.getElementById('kpi-yr10').textContent   = fmt(r10.nw);
+  document.getElementById('kpi-yr20').textContent   = fmt(r20.nw);
+  document.getElementById('kpi-yr30').textContent   = fmt(rN.nw);
+  document.getElementById('ms-lbl-10').textContent  = `${calYear(r10.year)} (age ${calAge(r10.year)})`;
+  document.getElementById('ms-lbl-20').textContent  = `${calYear(r20.year)} (age ${calAge(r20.year)})`;
+  document.getElementById('ms-lbl-last').textContent= `${calYear(rN.year)} (age ${calAge(rN.year)})`;
 }
 
 function renderChart() {
@@ -500,7 +509,7 @@ function renderChart() {
   if (charts.main) { charts.main.destroy(); delete charts.main; }
   charts.main = new Chart(canvas, {
     type:'line', options: chartOpts(),
-    data: { labels: lastRows.map(r=>`Yr ${r.year}`), datasets: [{
+    data: { labels: lastRows.map(r=>`${calYear(r.year)}`), datasets: [{
       label:'Net Worth', data:lastRows.map(r=>r.nw),
       borderColor:'#6c63ff', backgroundColor:'rgba(108,99,255,0.07)',
       fill:true, tension:0.4, pointRadius:0, borderWidth:2.5
@@ -519,7 +528,7 @@ function renderTable() {
     milestones.forEach(m=>{if(!hit.has(m)&&r.nw>=m){hit.add(m);badges+=`<span class="mbadge">${fmt(m)}</span>`;}});
     const sc=r.annSavings>=0?'pos':'neg';
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>Year ${r.year}${badges}</td><td>${fmtFull(r.gross)}</td><td class="pos">${fmtFull(r.takehome)}</td><td class="neg">${fmtFull(r.exp)}</td><td class="${sc}">${fmtFull(r.annSavings)}</td><td class="pos">${fmtFull(r.investGains)}</td><td style="font-weight:700">${fmtFull(r.nw)}</td>`;
+    tr.innerHTML=`<td>${calYear(r.year)}${badges}</td><td style="color:var(--muted)">${calAge(r.year)}</td><td>${fmtFull(r.gross)}</td><td class="pos">${fmtFull(r.takehome)}</td><td class="neg">${fmtFull(r.exp)}</td><td class="${sc}">${fmtFull(r.annSavings)}</td><td class="pos">${fmtFull(r.investGains)}</td><td style="font-weight:700">${fmtFull(r.nw)}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -550,7 +559,7 @@ function renderSavings() {
     type:'bar', options: chartOpts({ plugins: { legend:{ labels:{color:'#8892a4',boxWidth:10,font:{size:10},padding:10} },
       tooltip:{ backgroundColor:'#1a1d27',borderColor:'#2e3250',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#8892a4',
         callbacks:{label:c=>` ${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString()}`} } } }),
-    data: { labels: lastRows.map(r=>`Yr ${r.year}`), datasets:[
+    data: { labels: lastRows.map(r=>`${calYear(r.year)}`), datasets:[
       { label:'Annual Savings', data:lastRows.map(r=>r.annSavings), backgroundColor: lastRows.map(r=>r.annSavings>=0?'rgba(0,212,170,0.7)':'rgba(255,107,107,0.7)'), borderRadius:3 },
       { label:'Investment Gains', data:lastRows.map(r=>r.investGains), backgroundColor:'rgba(108,99,255,0.7)', borderRadius:3 },
     ]}
