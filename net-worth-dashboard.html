@@ -65,7 +65,7 @@
     .btn:hover { opacity: 0.88; }
 
     /* Main */
-    .main { display: flex; flex-direction: column; padding: 16px 20px; overflow: hidden; gap: 14px; }
+    .main { display: flex; flex-direction: column; padding: 16px 20px; overflow-y: auto; gap: 14px; }
 
     /* KPI row */
     .kpi-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; flex-shrink: 0; }
@@ -85,9 +85,9 @@
     .card h3 { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
 
     /* Table */
-    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; }
     .table-wrap h3 { font-size: 0.65rem; font-weight: 700; color: var(--muted); padding: 8px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
-    .table-scroll { overflow-y: auto; flex: 1; }
+    .table-scroll { overflow-y: visible; }
     table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
     thead th { background: var(--surface2); padding: 6px 14px; text-align: right; color: var(--muted); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; z-index: 1; }
     thead th:first-child { text-align: left; }
