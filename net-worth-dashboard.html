@@ -509,7 +509,7 @@ function renderChart() {
   if (charts.main) { charts.main.destroy(); delete charts.main; }
   charts.main = new Chart(canvas, {
     type:'line', options: chartOpts(),
-    data: { labels: lastRows.map(r=>`${calYear(r.year)}`), datasets: [{
+    data: { labels: lastRows.map(r=>[`${calYear(r.year)}`,`age ${calAge(r.year)}`]), datasets: [{
       label:'Net Worth', data:lastRows.map(r=>r.nw),
       borderColor:'#6c63ff', backgroundColor:'rgba(108,99,255,0.07)',
       fill:true, tension:0.4, pointRadius:0, borderWidth:2.5
@@ -559,7 +559,7 @@ function renderSavings() {
     type:'bar', options: chartOpts({ plugins: { legend:{ labels:{color:'#8892a4',boxWidth:10,font:{size:10},padding:10} },
       tooltip:{ backgroundColor:'#1a1d27',borderColor:'#2e3250',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#8892a4',
         callbacks:{label:c=>` ${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString()}`} } } }),
-    data: { labels: lastRows.map(r=>`${calYear(r.year)}`), datasets:[
+    data: { labels: lastRows.map(r=>[`${calYear(r.year)}`,`age ${calAge(r.year)}`]), datasets:[
       { label:'Annual Savings', data:lastRows.map(r=>r.annSavings), backgroundColor: lastRows.map(r=>r.annSavings>=0?'rgba(0,212,170,0.7)':'rgba(255,107,107,0.7)'), borderRadius:3 },
       { label:'Investment Gains', data:lastRows.map(r=>r.investGains), backgroundColor:'rgba(108,99,255,0.7)', borderRadius:3 },
     ]}
