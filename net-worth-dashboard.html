@@ -474,8 +474,6 @@ function calculate() {
   // Chart
   const labels  = rows.map(r => `Yr ${r.year}`);
   const nwData  = rows.map(r => r.nw);
-  const thData  = rows.map(r => r.takehome);
-  const expData = rows.map(r => r.exp);
 
   const gridColor = '#2e3250';
   const opts = {
@@ -504,8 +502,6 @@ function calculate() {
       labels,
       datasets: [
         { label: 'Net Worth', data: nwData, borderColor: '#6c63ff', backgroundColor: 'rgba(108,99,255,0.07)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2.5 },
-        { label: 'Take-Home', data: thData, borderColor: '#00d4aa', backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, borderWidth: 1.5, borderDash: [4,3] },
-        { label: 'Expenses',  data: expData, borderColor: '#ff6b6b', backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, borderWidth: 1.5, borderDash: [4,3] },
       ]
     },
     options: opts
