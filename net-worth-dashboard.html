@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>30-Year Net Worth Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -15,93 +17,100 @@
     html, body { height: 100%; overflow: hidden; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
 
-    header { padding: 12px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    header h1 { font-size: 1.1rem; font-weight: 700; }
+    /* ── Header ── */
+    header { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    header h1 { font-size: 1.05rem; font-weight: 700; }
+    .hdr-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .hdr-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-size: 0.78rem; padding: 5px 12px; cursor: pointer; transition: all 0.15s; }
+    .hdr-btn:hover { border-color: var(--accent); color: var(--text); }
+    .hdr-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-    .layout { display: grid; grid-template-columns: 300px 1fr; flex: 1; overflow: hidden; }
+    /* ── Two-column layout ── */
+    .layout { display: grid; grid-template-columns: 296px 1fr; flex: 1; overflow: hidden; }
 
-    /* Sidebar */
-    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 14px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 0; }
-    .section-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin: 12px 0 7px; }
+    /* ── Sidebar ── */
+    .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 12px 14px; overflow-y: auto; }
+    .section-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin: 12px 0 6px; }
     .section-label:first-child { margin-top: 0; }
-    .field { margin-bottom: 8px; }
-    .field label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 3px; }
-    .field input, .field select {
-      width: 100%; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 7px; padding: 7px 10px; color: var(--text); font-size: 0.82rem; outline: none; transition: border-color 0.2s;
-    }
+    .field { margin-bottom: 7px; }
+    .field label { display: block; font-size: 0.73rem; color: var(--muted); margin-bottom: 3px; }
+    .field input, .field select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; color: var(--text); font-size: 0.8rem; outline: none; transition: border-color 0.2s; }
     .field input:focus, .field select:focus { border-color: var(--accent); }
     .field select option { background: var(--surface2); }
-    .pfx { position: relative; }
-    .pfx .pre { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.8rem; pointer-events: none; }
-    .pfx input { padding-left: 20px; }
-    .sfx { position: relative; }
-    .sfx .suf { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.8rem; pointer-events: none; }
-    .sfx input { padding-right: 26px; }
-
-    /* Tax summary badge */
-    .tax-summary { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; font-size: 0.75rem; color: var(--muted); margin-bottom: 8px; }
+    .pfx { position: relative; } .pfx .pre { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.78rem; pointer-events: none; } .pfx input { padding-left: 20px; }
+    .sfx { position: relative; } .sfx .suf { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.78rem; pointer-events: none; } .sfx input { padding-right: 26px; }
+    .tax-summary { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; font-size: 0.72rem; color: var(--muted); margin-bottom: 7px; }
     .tax-summary .row { display: flex; justify-content: space-between; padding: 1px 0; }
     .tax-summary .row span:last-child { color: var(--text); font-weight: 600; }
     .tax-summary .total { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; color: var(--text); font-weight: 700; }
-
-    /* Expense builder */
-    .expense-builder { display: flex; flex-direction: column; gap: 0; }
-    .exp-row { display: grid; grid-template-columns: 1fr 90px 22px; gap: 5px; align-items: center; margin-bottom: 5px; }
-    .exp-row input[type="text"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; color: var(--text); font-size: 0.78rem; outline: none; }
+    .expense-builder { display: flex; flex-direction: column; }
+    .exp-row { display: grid; grid-template-columns: 1fr 82px 22px; gap: 4px; align-items: center; margin-bottom: 4px; }
+    .exp-row input[type="text"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; color: var(--text); font-size: 0.75rem; outline: none; }
     .exp-row input[type="text"]:focus { border-color: var(--accent); }
     .exp-row .money { position: relative; }
-    .exp-row .money span { position: absolute; left: 7px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.75rem; pointer-events: none; }
-    .exp-row .money input { padding-left: 16px; width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px 5px 16px; color: var(--text); font-size: 0.78rem; outline: none; }
+    .exp-row .money span { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.73rem; pointer-events: none; }
+    .exp-row .money input { padding: 4px 7px 4px 14px; width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 0.75rem; outline: none; }
     .exp-row .money input:focus { border-color: var(--accent); }
-    .exp-row button { background: none; border: 1px solid var(--accent3); border-radius: 5px; color: var(--accent3); cursor: pointer; font-size: 1rem; width: 24px; height: 26px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; opacity: 0.6; }
+    .exp-row button { background: none; border: 1px solid var(--accent3); border-radius: 5px; color: var(--accent3); cursor: pointer; font-size: 0.95rem; width: 22px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0.6; transition: all 0.15s; }
     .exp-row button:hover { opacity: 1; background: rgba(255,107,107,0.12); }
-    .exp-total { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; font-size: 0.78rem; display: flex; justify-content: space-between; margin-top: 4px; margin-bottom: 8px; }
+    .exp-total { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; font-size: 0.75rem; display: flex; justify-content: space-between; margin-top: 3px; margin-bottom: 7px; }
     .exp-total span:last-child { color: var(--accent2); font-weight: 700; }
-    .add-btn { background: none; border: 1px dashed var(--border); border-radius: 6px; color: var(--muted); font-size: 0.75rem; padding: 5px; cursor: pointer; width: 100%; margin-bottom: 6px; transition: all 0.15s; }
-    .add-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .add-exp-btn { background: none; border: 1px dashed var(--border); border-radius: 6px; color: var(--muted); font-size: 0.72rem; padding: 4px; cursor: pointer; width: 100%; margin-bottom: 5px; transition: all 0.15s; }
+    .add-exp-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-    .btn { width: 100%; padding: 9px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s; margin-top: 4px; }
-    .btn:hover { opacity: 0.88; }
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; padding: 10px; overflow: hidden; gap: 0; }
 
-    /* Main */
-    .main { display: flex; flex-direction: column; padding: 16px 20px; overflow: hidden; gap: 12px; }
+    /* ── Edit mode banner ── */
+    .edit-bar { display: none; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 10px; background: rgba(108,99,255,0.08); border: 1px dashed var(--accent); border-radius: 8px; margin-bottom: 8px; flex-shrink: 0; }
+    body.editing .edit-bar { display: flex; }
+    .edit-bar-label { font-size: 0.7rem; color: var(--accent); font-weight: 600; }
+    .add-widget-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 0.72rem; padding: 3px 10px; cursor: pointer; transition: all 0.15s; }
+    .add-widget-chip:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* KPI row */
-    .kpi-row { display: grid; grid-template-columns: 1fr; gap: 12px; flex-shrink: 0; }
-    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; }
-    .kpi .label { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-    .kpi-milestones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .kpi-milestones .m { text-align: center; }
-    .kpi-milestones .m .yr { font-size: 0.7rem; color: var(--muted); margin-bottom: 2px; }
-    .kpi-milestones .m .val { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-    .kpi .value { font-size: 1.2rem; font-weight: 700; }
-    .kpi .sub { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
-    .kpi.positive .value { color: var(--accent2); }
-    .kpi.negative .value { color: var(--accent3); }
+    /* ── Gridstack overrides ── */
+    .grid-stack { flex: 1; min-height: 0; background: transparent; }
+    .grid-stack-item-content { border-radius: var(--radius); overflow: hidden; }
 
-    /* Content row: chart + table side by side */
-    .content-row { display: flex; gap: 12px; flex: 1; min-height: 0; }
+    /* ── Widget card ── */
+    .wcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); height: 100%; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s; }
+    body.editing .wcard { border-color: var(--accent); border-style: dashed; }
+    .whdr { display: flex; align-items: center; gap: 6px; padding: 7px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0; user-select: none; }
+    .wdrag { color: var(--muted); font-size: 1rem; cursor: grab; display: none; line-height: 1; }
+    body.editing .wdrag { display: block; }
+    .wtitle { font-size: 0.65rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; flex: 1; }
+    .wclose { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 2px; line-height: 1; display: none; transition: color 0.15s; }
+    .wclose:hover { color: var(--accent3); }
+    body.editing .wclose { display: block; }
+    .wbody { flex: 1; min-height: 0; padding: 10px 14px; overflow: hidden; display: flex; flex-direction: column; }
+    .wbody.nopad { padding: 0; }
+    .wbody canvas { flex: 1; min-height: 0; width: 100% !important; }
 
-    /* Chart */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .card h3 { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; flex-shrink: 0; }
-    .card canvas { flex: 1; min-height: 0; }
+    /* ── Milestones widget ── */
+    .ms-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; flex: 1; }
+    .ms-cell { background: var(--surface2); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px; }
+    .ms-yr { font-size: 0.68rem; color: var(--muted); margin-bottom: 3px; }
+    .ms-val { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
 
-    /* Table */
-    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
-    .table-wrap h3 { font-size: 0.65rem; font-weight: 700; color: var(--muted); padding: 8px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.06em; flex-shrink: 0; }
+    /* ── Table widget ── */
     .table-scroll { overflow-y: auto; flex: 1; min-height: 0; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    thead th { background: var(--surface2); padding: 7px 14px; text-align: right; color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; z-index: 1; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    thead th { background: var(--surface2); padding: 7px 13px; text-align: right; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; position: sticky; top: 0; z-index: 1; }
     thead th:first-child { text-align: left; }
     tbody tr { border-top: 1px solid var(--border); }
     tbody tr:hover { background: var(--surface2); }
-    tbody td { padding: 7px 14px; text-align: right; }
+    tbody td { padding: 6px 13px; text-align: right; }
     tbody td:first-child { text-align: left; font-weight: 600; }
-    .pos { color: var(--accent2); }
-    .neg { color: var(--accent3); }
-    .milestone { display: inline-block; background: var(--accent); color: #fff; border-radius: 3px; font-size: 0.6rem; padding: 1px 5px; margin-left: 4px; font-weight: 700; vertical-align: middle; }
+    .pos { color: var(--accent2); } .neg { color: var(--accent3); }
+    .mbadge { display: inline-block; background: var(--accent); color: #fff; border-radius: 3px; font-size: 0.58rem; padding: 1px 5px; margin-left: 4px; font-weight: 700; vertical-align: middle; }
+
+    /* ── Tax breakdown widget ── */
+    .tax-bars { display: flex; flex-direction: column; gap: 8px; flex: 1; justify-content: center; }
+    .tax-bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; }
+    .tax-bar-label { width: 130px; color: var(--muted); flex-shrink: 0; }
+    .tax-bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+    .tax-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    .tax-bar-val { width: 90px; text-align: right; font-weight: 600; color: var(--text); flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -109,13 +118,16 @@
 <header>
   <span>📈</span>
   <h1>30-Year Net Worth Projection</h1>
+  <div class="hdr-actions">
+    <button class="hdr-btn" onclick="resetLayout()">Reset Layout</button>
+    <button class="hdr-btn" id="editBtn" onclick="toggleEdit()">Edit Layout</button>
+  </div>
 </header>
 
 <div class="layout">
 
-  <!-- SIDEBAR -->
+  <!-- ── SIDEBAR ── -->
   <aside class="sidebar">
-
     <div class="section-label">Starting Point</div>
     <div class="field">
       <label>Current Net Worth / Savings</label>
@@ -140,7 +152,7 @@
       <select id="state" onchange="calculate()"></select>
     </div>
 
-    <div class="tax-summary" id="taxSummary">
+    <div class="tax-summary">
       <div class="row"><span>Federal Income Tax</span><span id="ts-fed">—</span></div>
       <div class="row"><span>FICA (SS + Medicare)</span><span id="ts-fica">—</span></div>
       <div class="row"><span>State Income Tax</span><span id="ts-state">—</span></div>
@@ -154,11 +166,8 @@
 
     <div class="section-label">Expenses (Monthly)</div>
     <div class="expense-builder" id="expenseBuilder"></div>
-    <button class="add-btn" onclick="addExpenseRow()">+ Add category</button>
-    <div class="exp-total">
-      <span>Total Annual Expenses</span>
-      <span id="expTotal">$0</span>
-    </div>
+    <button class="add-exp-btn" onclick="addExpenseRow()">+ Add category</button>
+    <div class="exp-total"><span>Total Annual Expenses</span><span id="expTotal">$0</span></div>
 
     <div class="section-label">Growth & Returns</div>
     <div class="field">
@@ -177,66 +186,26 @@
       <label>Years to Project</label>
       <input type="number" id="years" value="30" min="5" max="50" oninput="calculate()" />
     </div>
-
   </aside>
 
-  <!-- MAIN -->
-  <main class="main">
-
-    <div class="kpi-row">
-      <div class="kpi">
-        <div class="label">Net Worth Milestones</div>
-        <div class="kpi-milestones">
-          <div class="m"><div class="yr">Year 10</div><div class="val" id="kpi-yr10">—</div></div>
-          <div class="m"><div class="yr">Year 20</div><div class="val" id="kpi-yr20">—</div></div>
-          <div class="m"><div class="yr">Year 30</div><div class="val" id="kpi-yr30">—</div></div>
-        </div>
-      </div>
+  <!-- ── MAIN ── -->
+  <main class="main" id="mainArea">
+    <!-- Edit mode banner: shows available hidden widgets -->
+    <div class="edit-bar" id="editBar">
+      <span class="edit-bar-label">Add widget:</span>
+      <!-- chips injected by JS -->
     </div>
-
-    <div class="content-row">
-      <div class="card">
-        <h3>Net Worth Over Time</h3>
-        <canvas id="netWorthChart"></canvas>
-      </div>
-
-      <div class="table-wrap">
-        <h3>Year-by-Year Breakdown</h3>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Year</th>
-                <th>Gross Salary</th>
-                <th>Take-Home</th>
-                <th>Expenses</th>
-                <th>Annual Savings</th>
-                <th>Investment Gains</th>
-                <th>Net Worth</th>
-              </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
+    <div class="grid-stack" id="grid"></div>
   </main>
 </div>
 
 <script>
-// ─── STATE TAX DATA ────────────────────────────────────────────────────────────
-// Each state: { name, deduction: {single, mfj, hoh}, brackets: [[topOfBracket, rate], ...] }
-// Empty brackets = no income tax. Deduction is subtracted from gross before applying brackets.
+// ─── TAX DATA ────────────────────────────────────────────────────────────────
 const STATES = {
-  AK:{name:'Alaska',d:{s:0,m:0,h:0},b:[]},
-  FL:{name:'Florida',d:{s:0,m:0,h:0},b:[]},
-  NV:{name:'Nevada',d:{s:0,m:0,h:0},b:[]},
-  NH:{name:'New Hampshire',d:{s:0,m:0,h:0},b:[]},
-  SD:{name:'South Dakota',d:{s:0,m:0,h:0},b:[]},
-  TN:{name:'Tennessee',d:{s:0,m:0,h:0},b:[]},
-  TX:{name:'Texas',d:{s:0,m:0,h:0},b:[]},
-  WA:{name:'Washington',d:{s:0,m:0,h:0},b:[]},
+  AK:{name:'Alaska',d:{s:0,m:0,h:0},b:[]},FL:{name:'Florida',d:{s:0,m:0,h:0},b:[]},
+  NV:{name:'Nevada',d:{s:0,m:0,h:0},b:[]},NH:{name:'New Hampshire',d:{s:0,m:0,h:0},b:[]},
+  SD:{name:'South Dakota',d:{s:0,m:0,h:0},b:[]},TN:{name:'Tennessee',d:{s:0,m:0,h:0},b:[]},
+  TX:{name:'Texas',d:{s:0,m:0,h:0},b:[]},WA:{name:'Washington',d:{s:0,m:0,h:0},b:[]},
   WY:{name:'Wyoming',d:{s:0,m:0,h:0},b:[]},
   AL:{name:'Alabama',d:{s:2500,m:7500,h:4700},b:[[500,.02],[3000,.04],[1e9,.05]]},
   AR:{name:'Arkansas',d:{s:2200,m:4400,h:2200},b:[[4300,.02],[8500,.04],[1e9,.049]]},
@@ -281,251 +250,362 @@ const STATES = {
   WI:{name:'Wisconsin',d:{s:12760,m:23930,h:12760},b:[[14320,.035],[28640,.044],[315310,.053],[1e9,.0765]]},
   WV:{name:'West Virginia',d:{s:0,m:0,h:0},b:[[10000,.03],[25000,.04],[40000,.045],[60000,.06],[1e9,.065]]},
 };
-
-// ─── FEDERAL BRACKETS (2024, single/MFJ/HOH) ─────────────────────────────────
 const FED = {
-  single:   { ded: 14600, b: [[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[609350,.35],[1e9,.37]] },
-  mfj:      { ded: 29200, b: [[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[1e9,.37]] },
-  hoh:      { ded: 21900, b: [[16550,.10],[63100,.12],[100500,.22],[191950,.24],[243700,.32],[609350,.35],[1e9,.37]] },
+  single: { ded:14600, b:[[11600,.10],[47150,.12],[100525,.22],[191950,.24],[243725,.32],[609350,.35],[1e9,.37]] },
+  mfj:    { ded:29200, b:[[23200,.10],[94300,.12],[201050,.22],[383900,.24],[487450,.32],[731200,.35],[1e9,.37]] },
+  hoh:    { ded:21900, b:[[16550,.10],[63100,.12],[100500,.22],[191950,.24],[243700,.32],[609350,.35],[1e9,.37]] },
 };
-
 function bracketTax(taxable, brackets) {
-  let tax = 0, prev = 0;
-  for (const [top, rate] of brackets) {
-    if (taxable <= prev) break;
-    tax += (Math.min(taxable, top) - prev) * rate;
-    prev = top;
-  }
+  let tax=0, prev=0;
+  for (const [top,rate] of brackets) { if(taxable<=prev) break; tax+=(Math.min(taxable,top)-prev)*rate; prev=top; }
   return tax;
 }
-
-function calcFederal(gross, filing) {
-  const { ded, b } = FED[filing];
-  return bracketTax(Math.max(0, gross - ded), b);
-}
-
-function calcFICA(gross) {
-  const ss = Math.min(gross, 168600) * 0.062;
-  const medicare = gross * 0.0145 + Math.max(0, gross - 200000) * 0.009;
-  return ss + medicare;
-}
-
+function calcFederal(gross, filing) { const {ded,b}=FED[filing]; return bracketTax(Math.max(0,gross-ded),b); }
+function calcFICA(gross) { return Math.min(gross,168600)*0.062 + gross*0.0145 + Math.max(0,gross-200000)*0.009; }
 function calcState(gross, code, filing) {
-  const s = STATES[code];
-  if (!s || s.b.length === 0) return 0;
-  const deductionKey = { single: 's', mfj: 'm', hoh: 'h' }[filing];
-  const ded = s.d[deductionKey] || 0;
-  return bracketTax(Math.max(0, gross - ded), s.b);
+  const s=STATES[code]; if(!s||s.b.length===0) return 0;
+  const dk={single:'s',mfj:'m',hoh:'h'}[filing];
+  return bracketTax(Math.max(0,gross-s.d[dk]),s.b);
 }
 
-// ─── EXPENSE BUILDER ───────────────────────────────────────────────────────────
+// ─── EXPENSE BUILDER ────────────────────────────────────────────────────────
 const DEFAULT_EXPENSES = [
-  ['Rent / Housing', 1800],
-  ['Groceries', 400],
-  ['Dining Out', 300],
-  ['Transportation', 300],
-  ['Utilities', 150],
-  ['Entertainment', 100],
-  ['Healthcare', 150],
-  ['Subscriptions', 60],
-  ['Clothing', 80],
-  ['Personal Care', 60],
-  ['Travel', 150],
-  ['Other', 100],
+  ['Rent / Housing',1800],['Groceries',400],['Dining Out',300],['Transportation',300],
+  ['Utilities',150],['Entertainment',100],['Healthcare',150],['Subscriptions',60],
+  ['Clothing',80],['Personal Care',60],['Travel',150],['Other',100],
 ];
-
-function buildExpenseRows() {
-  const el = document.getElementById('expenseBuilder');
-  el.innerHTML = '';
-  DEFAULT_EXPENSES.forEach(([name, amt]) => addExpenseRow(name, amt));
-}
-
 let expRowCount = 0;
-function addExpenseRow(name = '', amount = 0) {
+function buildExpenseRows() {
+  document.getElementById('expenseBuilder').innerHTML = '';
+  DEFAULT_EXPENSES.forEach(([n,a]) => addExpenseRow(n,a));
+}
+function addExpenseRow(name='', amount=0) {
   expRowCount++;
   const id = `exp-${expRowCount}`;
   const el = document.getElementById('expenseBuilder');
   const row = document.createElement('div');
-  row.className = 'exp-row';
-  row.id = id;
-  row.innerHTML = `
-    <input type="text" placeholder="Category" value="${name}" oninput="updateExpenses()" />
-    <div class="money"><span>$</span><input type="number" value="${amount}" min="0" placeholder="0" oninput="updateExpenses()" /></div>
-    <button onclick="removeExpRow('${id}')" title="Remove">×</button>
-  `;
+  row.className='exp-row'; row.id=id;
+  row.innerHTML=`<input type="text" placeholder="Category" value="${name}" oninput="updateExpenses()"/>
+    <div class="money"><span>$</span><input type="number" value="${amount}" min="0" placeholder="0" oninput="updateExpenses()"/></div>
+    <button onclick="removeExpRow('${id}')" title="Remove">×</button>`;
   el.appendChild(row);
   updateExpenses();
 }
-
-function removeExpRow(id) {
-  document.getElementById(id)?.remove();
-  updateExpenses();
-}
-
+function removeExpRow(id) { document.getElementById(id)?.remove(); updateExpenses(); }
 function getAnnualExpenses() {
-  let total = 0;
-  document.querySelectorAll('#expenseBuilder .exp-row').forEach(row => {
-    const val = parseFloat(row.querySelector('input[type="number"]')?.value) || 0;
-    total += val;
-  });
-  return total * 12;
+  let t=0;
+  document.querySelectorAll('#expenseBuilder .exp-row').forEach(r=>{t+=(parseFloat(r.querySelector('input[type="number"]')?.value)||0);});
+  return t*12;
 }
-
 function updateExpenses() {
-  const annual = getAnnualExpenses();
-  document.getElementById('expTotal').textContent = '$' + Math.round(annual).toLocaleString() + '/yr';
+  const a=getAnnualExpenses();
+  document.getElementById('expTotal').textContent='$'+Math.round(a).toLocaleString()+'/yr';
   calculate();
 }
 
-// ─── POPULATE STATE DROPDOWN ──────────────────────────────────────────────────
+// ─── STATE DROPDOWN ─────────────────────────────────────────────────────────
 function populateStates() {
-  const sel = document.getElementById('state');
-  const sorted = Object.entries(STATES).sort((a, b) => a[1].name.localeCompare(b[1].name));
-  sorted.forEach(([code, { name }]) => {
-    const o = document.createElement('option');
-    o.value = code;
-    o.textContent = name;
-    if (code === 'CA') o.selected = true;
-    sel.appendChild(o);
+  const sel=document.getElementById('state');
+  Object.entries(STATES).sort((a,b)=>a[1].name.localeCompare(b[1].name)).forEach(([code,{name}])=>{
+    const o=document.createElement('option'); o.value=code; o.textContent=name;
+    if(code==='CA') o.selected=true; sel.appendChild(o);
   });
 }
 
-// ─── FORMAT ───────────────────────────────────────────────────────────────────
-function fmt(n) {
-  const abs = Math.abs(n);
-  const sign = n < 0 ? '-' : '';
-  if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(2) + 'M';
-  if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(1) + 'K';
-  return sign + '$' + abs.toFixed(0);
+// ─── FORMAT ─────────────────────────────────────────────────────────────────
+function fmt(n) { const a=Math.abs(n),s=n<0?'-':''; return a>=1e6?s+'$'+(a/1e6).toFixed(2)+'M':a>=1e3?s+'$'+(a/1e3).toFixed(1)+'K':s+'$'+a.toFixed(0); }
+function fmtFull(n) { return (n<0?'-':'')+'$'+Math.round(Math.abs(n)).toLocaleString(); }
+function pct(n) { return (n*100).toFixed(1)+'%'; }
+
+// ─── WIDGET DEFINITIONS ─────────────────────────────────────────────────────
+const WIDGET_DEFS = {
+  milestones: { title:'Net Worth Milestones', x:0,y:0,w:12,h:2,
+    html:`<div class="wbody"><div class="ms-grid">
+      <div class="ms-cell"><div class="ms-yr">Year 10</div><div class="ms-val" id="kpi-yr10">—</div></div>
+      <div class="ms-cell"><div class="ms-yr">Year 20</div><div class="ms-val" id="kpi-yr20">—</div></div>
+      <div class="ms-cell"><div class="ms-yr">Year 30</div><div class="ms-val" id="kpi-yr30">—</div></div>
+    </div></div>` },
+  chart: { title:'Net Worth Projection', x:0,y:2,w:7,h:7,
+    html:`<div class="wbody"><canvas id="netWorthChart"></canvas></div>` },
+  table: { title:'Year-by-Year Breakdown', x:7,y:2,w:5,h:7,
+    html:`<div class="wbody nopad"><div class="table-scroll"><table>
+      <thead><tr><th>Year</th><th>Gross</th><th>Take-Home</th><th>Expenses</th><th>Savings</th><th>Inv. Gains</th><th>Net Worth</th></tr></thead>
+      <tbody id="tableBody"></tbody></table></div></div>` },
+  taxes: { title:'Year-1 Tax Breakdown', x:0,y:9,w:5,h:4,
+    html:`<div class="wbody"><div class="tax-bars" id="taxBars"></div></div>` },
+  savings: { title:'Annual Savings Over Time', x:5,y:9,w:7,h:4,
+    html:`<div class="wbody"><canvas id="savingsChart"></canvas></div>` },
+};
+
+// ─── GRID STATE ─────────────────────────────────────────────────────────────
+let grid;
+let editMode = false;
+const visible = new Set(); // currently shown widget IDs
+const charts = {};         // { netWorthChart, savingsChart }
+let lastRows = [], lastTaxData = null;
+
+function wrapWidget(id) {
+  const def = WIDGET_DEFS[id];
+  return `<div class="wcard" id="wcard-${id}">
+    <div class="whdr">
+      <span class="wdrag">⠿</span>
+      <span class="wtitle">${def.title}</span>
+      <button class="wclose" onclick="hideWidget('${id}')" title="Hide">×</button>
+    </div>
+    ${def.html}
+  </div>`;
 }
-function fmtFull(n) {
-  const sign = n < 0 ? '-' : '';
-  return sign + '$' + Math.round(Math.abs(n)).toLocaleString();
+
+function cellH() {
+  const main = document.getElementById('mainArea');
+  const bar  = document.getElementById('editBar');
+  const avail = main.clientHeight - 20 - (bar.offsetHeight||0) - 10;
+  return Math.max(52, Math.floor(avail / 9));
 }
-function pct(n) { return (n * 100).toFixed(1) + '%'; }
 
-// ─── MAIN CALCULATION ─────────────────────────────────────────────────────────
-let chart;
-function calculate() {
-  const startNW      = parseFloat(document.getElementById('netWorth').value) || 0;
-  const salary       = parseFloat(document.getElementById('salary').value) || 0;
-  const filing       = document.getElementById('filingStatus').value;
-  const stateCode    = document.getElementById('state').value;
-  const incomeGrowth = parseFloat(document.getElementById('incomeGrowth').value) / 100 || 0;
-  const expGrowth    = parseFloat(document.getElementById('expenseGrowth').value) / 100 || 0;
-  const investReturn = parseFloat(document.getElementById('investReturn').value) / 100 || 0;
-  const years        = Math.min(50, Math.max(1, parseInt(document.getElementById('years').value) || 30));
+function initGrid() {
+  const ch = cellH();
+  grid = GridStack.init({
+    column: 12, cellHeight: ch, margin: 6,
+    animate: true, float: false, resizable: { handles: 'se,sw,ne,nw,e,w,s' },
+  }, '#grid');
+  grid.setStatic(true);
 
-  // Tax breakdown for year 1
-  const fedTax   = calcFederal(salary, filing);
-  const ficaTax  = calcFICA(salary);
-  const stateTax = calcState(salary, stateCode, filing);
-  const totalTax = fedTax + ficaTax + stateTax;
-  const effectiveRate = salary > 0 ? totalTax / salary : 0;
+  grid.on('resizestop', () => setTimeout(resizeCharts, 60));
+  grid.on('change', () => { if (!editMode) saveLayout(); });
 
-  document.getElementById('ts-fed').textContent   = fmtFull(fedTax)   + ` (${pct(fedTax/salary)})`;
-  document.getElementById('ts-fica').textContent  = fmtFull(ficaTax)  + ` (${pct(ficaTax/salary)})`;
-  document.getElementById('ts-state').textContent = fmtFull(stateTax) + ` (${pct(stateTax/salary)})`;
-  document.getElementById('ts-total').textContent = pct(effectiveRate);
+  const saved = tryLoadLayout();
+  if (!saved) addDefaultWidgets();
+}
 
-  const annualExpenses = getAnnualExpenses();
-  const investPct = Math.min(100, Math.max(0, parseFloat(document.getElementById('investPct').value) || 80)) / 100;
-
-  const rows = [];
-  let nw = startNW;
-  let curSalary   = salary;
-  let curExpenses = annualExpenses;
-
-  for (let y = 1; y <= years; y++) {
-    const gross       = curSalary;
-    const fed         = calcFederal(gross, filing);
-    const fica        = calcFICA(gross);
-    const st          = calcState(gross, stateCode, filing);
-    const takehome    = gross - fed - fica - st;
-    const exp         = curExpenses;
-    const annSavings  = takehome - exp;
-    const investGains = nw * investPct * investReturn;
-    nw = nw + investGains + annSavings;
-
-    rows.push({ year: y, gross, takehome, exp, annSavings, investGains, nw });
-    curSalary   *= (1 + incomeGrowth);
-    curExpenses *= (1 + expGrowth);
-  }
-
-  // KPIs
-  const r0 = rows[0];
-  const r10 = rows[Math.min(9,  rows.length - 1)];
-  const r20 = rows[Math.min(19, rows.length - 1)];
-  const rN  = rows[rows.length - 1];
-
-  document.getElementById('kpi-yr10').textContent = fmt(r10.nw);
-  document.getElementById('kpi-yr20').textContent = fmt(r20.nw);
-  document.getElementById('kpi-yr30').textContent = fmt(rN.nw);
-
-  // Chart
-  const labels  = rows.map(r => `Yr ${r.year}`);
-  const nwData  = rows.map(r => r.nw);
-
-  const gridColor = '#2e3250';
-  const opts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 300 },
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { labels: { color: '#8892a4', boxWidth: 10, font: { size: 10 }, padding: 12 } },
-      tooltip: {
-        backgroundColor: '#1a1d27', borderColor: '#2e3250', borderWidth: 1,
-        titleColor: '#e2e8f0', bodyColor: '#8892a4',
-        callbacks: { label: c => ` ${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString()}` }
-      }
-    },
-    scales: {
-      x: { ticks: { color: '#8892a4', font: { size: 9 }, maxTicksLimit: 10 }, grid: { color: gridColor } },
-      y: { ticks: { color: '#8892a4', font: { size: 9 }, callback: v => fmt(v) }, grid: { color: gridColor } }
-    }
-  };
-
-  if (chart) chart.destroy();
-  chart = new Chart(document.getElementById('netWorthChart'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Net Worth', data: nwData, borderColor: '#6c63ff', backgroundColor: 'rgba(108,99,255,0.07)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2.5 },
-      ]
-    },
-    options: opts
+function addDefaultWidgets() {
+  ['milestones','chart','table'].forEach(id => {
+    const d = WIDGET_DEFS[id];
+    addWidgetToGrid(id, d.x, d.y, d.w, d.h);
   });
+}
 
-  // Table
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
-  const milestones = [1e5, 2.5e5, 5e5, 1e6, 2e6, 5e6, 1e7];
-  const hit = new Set();
-  rows.forEach(r => {
-    let badges = '';
-    milestones.forEach(m => {
-      if (!hit.has(m) && r.nw >= m) { hit.add(m); badges += `<span class="milestone">${fmt(m)}</span>`; }
+function addWidgetToGrid(id, x, y, w, h) {
+  const def = WIDGET_DEFS[id];
+  grid.addWidget({ x, y, w, h, id, content: wrapWidget(id) });
+  visible.add(id);
+  renderWidget(id);
+  updateEditBar();
+}
+
+function hideWidget(id) {
+  const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`);
+  if (el) grid.removeWidget(el);
+  visible.delete(id);
+  updateEditBar();
+  saveLayout();
+}
+
+// ─── EDIT MODE ───────────────────────────────────────────────────────────────
+function toggleEdit() {
+  editMode = !editMode;
+  grid.setStatic(!editMode);
+  document.body.classList.toggle('editing', editMode);
+  const btn = document.getElementById('editBtn');
+  btn.textContent = editMode ? '✓ Done' : 'Edit Layout';
+  btn.classList.toggle('active', editMode);
+  if (!editMode) saveLayout();
+}
+
+function updateEditBar() {
+  const bar = document.getElementById('editBar');
+  const chips = Object.keys(WIDGET_DEFS)
+    .filter(id => !visible.has(id))
+    .map(id => `<button class="add-widget-chip" onclick="restoreWidget('${id}')">+ ${WIDGET_DEFS[id].title}</button>`)
+    .join('');
+  bar.innerHTML = `<span class="edit-bar-label">Add widget:</span>${chips || '<span style="color:var(--muted);font-size:0.72rem">All widgets visible</span>'}`;
+}
+
+function restoreWidget(id) {
+  const def = WIDGET_DEFS[id];
+  addWidgetToGrid(id, def.x, def.y, def.w, def.h);
+  saveLayout();
+}
+
+// ─── LAYOUT PERSISTENCE ──────────────────────────────────────────────────────
+function saveLayout() {
+  const items = grid.save(false);
+  localStorage.setItem('nw-layout-v2', JSON.stringify({ items, visible: [...visible] }));
+}
+
+function tryLoadLayout() {
+  try {
+    const raw = localStorage.getItem('nw-layout-v2');
+    if (!raw) return false;
+    const { items, visible: vis } = JSON.parse(raw);
+    vis.forEach(id => {
+      const saved = items.find(i => i.id === id);
+      if (saved) addWidgetToGrid(id, saved.x, saved.y, saved.w, saved.h);
+      else { const d=WIDGET_DEFS[id]; addWidgetToGrid(id,d.x,d.y,d.w,d.h); }
     });
-    const sc = r.annSavings >= 0 ? 'pos' : 'neg';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>Year ${r.year}${badges}</td>
-      <td>${fmtFull(r.gross)}</td>
-      <td class="pos">${fmtFull(r.takehome)}</td>
-      <td class="neg">${fmtFull(r.exp)}</td>
-      <td class="${sc}">${fmtFull(r.annSavings)}</td>
-      <td class="pos">${fmtFull(r.investGains)}</td>
-      <td style="font-weight:700">${fmtFull(r.nw)}</td>
-    `;
+    return true;
+  } catch { return false; }
+}
+
+function resetLayout() {
+  localStorage.removeItem('nw-layout-v2');
+  // Remove all existing widgets
+  visible.forEach(id => {
+    const el = document.querySelector(`.grid-stack-item[gs-id="${id}"]`);
+    if (el) grid.removeWidget(el);
+  });
+  visible.clear();
+  addDefaultWidgets();
+  if (editMode) toggleEdit();
+}
+
+// ─── CHART HELPERS ───────────────────────────────────────────────────────────
+function resizeCharts() { Object.values(charts).forEach(c => c?.resize()); }
+const chartOpts = (extraOpts={}) => ({
+  responsive: true, maintainAspectRatio: false, animation: { duration: 250 },
+  interaction: { mode:'index', intersect:false },
+  plugins: {
+    legend: { labels: { color:'#8892a4', boxWidth:10, font:{size:10}, padding:10 } },
+    tooltip: { backgroundColor:'#1a1d27', borderColor:'#2e3250', borderWidth:1,
+      titleColor:'#e2e8f0', bodyColor:'#8892a4',
+      callbacks: { label: c=>` ${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString()}` } }
+  },
+  scales: {
+    x: { ticks:{color:'#8892a4',font:{size:9},maxTicksLimit:10}, grid:{color:'#2e3250'} },
+    y: { ticks:{color:'#8892a4',font:{size:9},callback:v=>fmt(v)}, grid:{color:'#2e3250'} }
+  }, ...extraOpts
+});
+
+// ─── WIDGET RENDERERS ────────────────────────────────────────────────────────
+function renderWidget(id) {
+  if (!lastRows.length && id !== 'taxes') return;
+  if (id === 'milestones') renderMilestones();
+  if (id === 'chart')      renderChart();
+  if (id === 'table')      renderTable();
+  if (id === 'taxes')      renderTaxes();
+  if (id === 'savings')    renderSavings();
+}
+
+function renderMilestones() {
+  if (!lastRows.length) return;
+  const yr = n => lastRows[Math.min(n-1, lastRows.length-1)];
+  document.getElementById('kpi-yr10').textContent = fmt(yr(10).nw);
+  document.getElementById('kpi-yr20').textContent = fmt(yr(20).nw);
+  document.getElementById('kpi-yr30').textContent = fmt(lastRows[lastRows.length-1].nw);
+}
+
+function renderChart() {
+  const canvas = document.getElementById('netWorthChart');
+  if (!canvas || !lastRows.length) return;
+  if (charts.main) { charts.main.destroy(); delete charts.main; }
+  charts.main = new Chart(canvas, {
+    type:'line', options: chartOpts(),
+    data: { labels: lastRows.map(r=>`Yr ${r.year}`), datasets: [{
+      label:'Net Worth', data:lastRows.map(r=>r.nw),
+      borderColor:'#6c63ff', backgroundColor:'rgba(108,99,255,0.07)',
+      fill:true, tension:0.4, pointRadius:0, borderWidth:2.5
+    }]}
+  });
+}
+
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  if (!tbody || !lastRows.length) return;
+  tbody.innerHTML = '';
+  const milestones=[1e5,2.5e5,5e5,1e6,2e6,5e6,1e7];
+  const hit=new Set();
+  lastRows.forEach(r => {
+    let badges='';
+    milestones.forEach(m=>{if(!hit.has(m)&&r.nw>=m){hit.add(m);badges+=`<span class="mbadge">${fmt(m)}</span>`;}});
+    const sc=r.annSavings>=0?'pos':'neg';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>Year ${r.year}${badges}</td><td>${fmtFull(r.gross)}</td><td class="pos">${fmtFull(r.takehome)}</td><td class="neg">${fmtFull(r.exp)}</td><td class="${sc}">${fmtFull(r.annSavings)}</td><td class="pos">${fmtFull(r.investGains)}</td><td style="font-weight:700">${fmtFull(r.nw)}</td>`;
     tbody.appendChild(tr);
   });
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+function renderTaxes() {
+  const el = document.getElementById('taxBars');
+  if (!el || !lastTaxData) return;
+  const {fed, fica, state, gross} = lastTaxData;
+  const max = fed + fica + state;
+  const items = [
+    { label:'Federal Income Tax', val:fed, color:'#6c63ff' },
+    { label:'FICA (SS + Medicare)', val:fica, color:'#00d4aa' },
+    { label:'State Income Tax', val:state, color:'#ffa64d' },
+  ];
+  el.innerHTML = items.map(({label,val,color}) => `
+    <div class="tax-bar-row">
+      <span class="tax-bar-label">${label}</span>
+      <div class="tax-bar-track"><div class="tax-bar-fill" style="width:${max>0?val/max*100:0}%;background:${color}"></div></div>
+      <span class="tax-bar-val">${fmtFull(val)} <span style="color:var(--muted);font-size:0.7rem">(${gross>0?pct(val/gross):'—'})</span></span>
+    </div>`).join('');
+}
+
+function renderSavings() {
+  const canvas = document.getElementById('savingsChart');
+  if (!canvas || !lastRows.length) return;
+  if (charts.savings) { charts.savings.destroy(); delete charts.savings; }
+  charts.savings = new Chart(canvas, {
+    type:'bar', options: chartOpts({ plugins: { legend:{ labels:{color:'#8892a4',boxWidth:10,font:{size:10},padding:10} },
+      tooltip:{ backgroundColor:'#1a1d27',borderColor:'#2e3250',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#8892a4',
+        callbacks:{label:c=>` ${c.dataset.label}: $${Math.round(c.parsed.y).toLocaleString()}`} } } }),
+    data: { labels: lastRows.map(r=>`Yr ${r.year}`), datasets:[
+      { label:'Annual Savings', data:lastRows.map(r=>r.annSavings), backgroundColor: lastRows.map(r=>r.annSavings>=0?'rgba(0,212,170,0.7)':'rgba(255,107,107,0.7)'), borderRadius:3 },
+      { label:'Investment Gains', data:lastRows.map(r=>r.investGains), backgroundColor:'rgba(108,99,255,0.7)', borderRadius:3 },
+    ]}
+  });
+}
+
+// ─── MAIN CALCULATION ────────────────────────────────────────────────────────
+function calculate() {
+  const startNW      = parseFloat(document.getElementById('netWorth').value)||0;
+  const salary       = parseFloat(document.getElementById('salary').value)||0;
+  const filing       = document.getElementById('filingStatus').value;
+  const stateCode    = document.getElementById('state').value;
+  const incomeGrowth = (parseFloat(document.getElementById('incomeGrowth').value)||0)/100;
+  const expGrowth    = (parseFloat(document.getElementById('expenseGrowth').value)||0)/100;
+  const investReturn = (parseFloat(document.getElementById('investReturn').value)||0)/100;
+  const investPct    = Math.min(1,Math.max(0,(parseFloat(document.getElementById('investPct').value)||80)/100));
+  const years        = Math.min(50,Math.max(1,parseInt(document.getElementById('years').value)||30));
+
+  const fedTax   = calcFederal(salary,filing);
+  const ficaTax  = calcFICA(salary);
+  const stateTax = calcState(salary,stateCode,filing);
+  const totalTax = fedTax+ficaTax+stateTax;
+  const effRate  = salary>0?totalTax/salary:0;
+
+  document.getElementById('ts-fed').textContent   = fmtFull(fedTax)+` (${pct(fedTax/salary)})`;
+  document.getElementById('ts-fica').textContent  = fmtFull(ficaTax)+` (${pct(ficaTax/salary)})`;
+  document.getElementById('ts-state').textContent = fmtFull(stateTax)+` (${pct(stateTax/salary)})`;
+  document.getElementById('ts-total').textContent = pct(effRate);
+  lastTaxData = { fed:fedTax, fica:ficaTax, state:stateTax, gross:salary };
+
+  const annExp = getAnnualExpenses();
+  const rows=[]; let nw=startNW, curSal=salary, curExp=annExp;
+  for (let y=1;y<=years;y++) {
+    const gross=curSal, fed=calcFederal(gross,filing), fica=calcFICA(gross), st=calcState(gross,stateCode,filing);
+    const takehome=gross-fed-fica-st, exp=curExp, annSavings=takehome-exp;
+    const investGains=nw*investPct*investReturn;
+    nw=nw+investGains+annSavings;
+    rows.push({year:y,gross,takehome,exp,annSavings,investGains,nw});
+    curSal*=(1+incomeGrowth); curExp*=(1+expGrowth);
+  }
+  lastRows = rows;
+
+  visible.forEach(id => renderWidget(id));
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  grid?.cellHeight(cellH());
+  setTimeout(resizeCharts, 100);
+});
+
 populateStates();
 buildExpenseRows();
+initGrid();
+updateEditBar();
 calculate();
 </script>
 </body>
