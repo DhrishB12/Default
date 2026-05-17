@@ -133,6 +133,10 @@
       <label>Current Net Worth / Savings</label>
       <div class="pfx"><span class="pre">$</span><input type="number" id="netWorth" value="25000" min="0" oninput="calculate()" /></div>
     </div>
+    <div class="field">
+      <label>Months remaining in <strong id="partialYearLabel" style="color:var(--text)">—</strong> (partial first year)</label>
+      <div class="sfx"><span class="suf">mo</span><input type="number" id="partialMonths" value="6" min="1" max="12" step="1" oninput="calculate()" /></div>
+    </div>
 
     <div class="section-label">Income</div>
     <div class="field">
@@ -591,11 +595,14 @@ function calculate() {
   lastTaxData = { fed:fedTax, fica:ficaTax, state:stateTax, gross:salary };
 
   const annExp = getAnnualExpenses();
+  const partialMonths = Math.min(12, Math.max(1, parseFloat(document.getElementById('partialMonths').value) || 6));
+  const partialFactor = partialMonths / 12;
   const rows=[]; let nw=startNW, curSal=salary, curExp=annExp;
   for (let y=1;y<=years;y++) {
-    const gross=curSal, fed=calcFederal(gross,filing), fica=calcFICA(gross), st=calcState(gross,stateCode,filing);
-    const takehome=gross-fed-fica-st, exp=curExp, annSavings=takehome-exp;
-    const investGains=nw*investPct*investReturn;
+    const f = y === 1 ? partialFactor : 1;
+    const gross=curSal*f, fed=calcFederal(gross,filing), fica=calcFICA(gross), st=calcState(gross,stateCode,filing);
+    const takehome=gross-fed-fica-st, exp=curExp*f, annSavings=takehome-exp;
+    const investGains=nw*investPct*(Math.pow(1+investReturn,f)-1);
     nw=nw+investGains+annSavings;
     rows.push({year:y,gross,takehome,exp,annSavings,investGains,nw});
     curSal*=(1+incomeGrowth); curExp*=(1+expGrowth);
@@ -613,6 +620,7 @@ window.addEventListener('resize', () => {
 
 populateStates();
 buildExpenseRows();
+document.getElementById('partialYearLabel').textContent = START_YEAR;
 initGrid();
 updateEditBar();
 calculate();
