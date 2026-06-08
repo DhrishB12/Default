@@ -295,14 +295,16 @@ TOP100_DIFF = {
 # 5. ASSEMBLE ALL FOUR TIERS + FULL INDEX
 # ─────────────────────────────────────────────────────────────
 
-YEARS = sorted(SP500_TOTAL_RETURN.keys())
+import os
+END_YEAR = int(os.environ.get('END_YEAR', 2025))
+YEARS = sorted(y for y in SP500_TOTAL_RETURN.keys() if y <= END_YEAR)
 
 portfolios = {
     'Top 5':          {y: TOP5_RETURNS[y]                        for y in YEARS},
     'Top 10':         {y: top10_return(y)                        for y in YEARS},
     'Top 50':         {y: SP500_TOTAL_RETURN[y] + TOP50_DIFF[y]  for y in YEARS},
     'Top 100':        {y: SP500_TOTAL_RETURN[y] + TOP100_DIFF[y] for y in YEARS},
-    'Top 500 (Full S&P)': SP500_TOTAL_RETURN,
+    'Top 500 (Full S&P)': {y: SP500_TOTAL_RETURN[y]              for y in YEARS},
 }
 
 # ─────────────────────────────────────────────────────────────
@@ -347,8 +349,9 @@ def fmt_money(n):
     if n >= 1e6:  return f'${n/1e6:.2f}M'
     return f'${n:,.0f}'
 
+N_YEARS = len(YEARS)
 print(f'\n{SEP}')
-print('  S&P 500 MARKET-CAP TIER ANALYSIS: 50-YEAR ANNUAL RETURNS (1976–2025)')
+print(f'  S&P 500 MARKET-CAP TIER ANALYSIS: {N_YEARS}-YEAR ANNUAL RETURNS ({YEARS[0]}–{YEARS[-1]})')
 print('  Equal-weighted within each tier | Rebalanced annually by market-cap rank')
 print(SEP)
 
@@ -366,7 +369,7 @@ for y in YEARS:
 
 # ── Summary statistics ──
 print(f'\n{SEP}')
-print('  SUMMARY STATISTICS (50 YEARS)')
+print(f'  SUMMARY STATISTICS ({N_YEARS} YEARS)')
 print(SEP)
 print(f"\n  {'Metric':<34}  {'Top 5':>9}  {'Top 10':>9}  {'Top 50':>9}  {'Top 100':>9}  {'Top 500':>9}")
 print(f"  {'─'*82}")
@@ -400,21 +403,21 @@ for name in ['Top 5', 'Top 10', 'Top 50', 'Top 100', 'Top 500 (Full S&P)']:
 print(row)
 
 # Positive years
-row = f"  {'Positive Years (out of 50)':34}"
+row = f"  {('Positive Years (out of %d)' % N_YEARS):34}"
 for name in ['Top 5', 'Top 10', 'Top 50', 'Top 100', 'Top 500 (Full S&P)']:
     py = summary[name]['pos_years']
-    row += f"  {py:>9}/50"
+    row += f"  {py:>9}/{N_YEARS}"
 print(row)
 
 # $100K growth
-row = f"  {'$100K grown to (50 yrs)':34}"
+row = f"  {('$100K grown to (%d yrs)' % N_YEARS):34}"
 for name in ['Top 5', 'Top 10', 'Top 50', 'Top 100', 'Top 500 (Full S&P)']:
     fv = summary[name]['final_100k']
     row += f"  {fmt_money(fv):>10}"
 print(row)
 
 # ── Era analysis ──
-eras = [
+_all_eras = [
     ('1976–1985', range(1976, 1986), 'Industrial/Energy: IBM, AT&T, Exxon, GE dominated'),
     ('1986–1994', range(1986, 1995), 'IBM Crisis / Post-Divestiture: Top-cap lag'),
     ('1995–1999', range(1995, 2000), 'Dot-Com Boom: MSFT, GE, Cisco surged'),
@@ -424,6 +427,15 @@ eras = [
     ('2010–2018', range(2010, 2019), 'Apple/Google/Amazon rise: Tech mega-cap return'),
     ('2019–2025', range(2019, 2026), 'Mega-Cap Dominance: FAANG+MSFT+NVDA era'),
 ]
+# Keep only eras with at least one year in range; clamp the last era's label
+eras = []
+for era_name, era_years, desc in _all_eras:
+    in_range = [y for y in era_years if y <= END_YEAR]
+    if not in_range:
+        continue
+    if in_range[-1] != list(era_years)[-1]:
+        era_name = f"{in_range[0]}–{in_range[-1]}"
+    eras.append((era_name, in_range, desc))
 
 print(f'\n{SEP}')
 print('  ERA-BY-ERA CAGR COMPARISON')
@@ -455,7 +467,7 @@ t100 = summary['Top 100']['cagr']
 t500 = summary['Top 500 (Full S&P)']['cagr']
 
 print(f"""
-  1. FULL-PERIOD CAGR (1976-2025, 50 years):
+  1. FULL-PERIOD CAGR ({YEARS[0]}-{YEARS[-1]}, {N_YEARS} years):
        Top 5:   {t5:+.2f}%  |  Top 10:  {t10:+.2f}%  |  Top 50:  {t50:+.2f}%
        Top 100: {t100:+.2f}%  |  Top 500 (S&P):  {t500:+.2f}%
 
@@ -512,14 +524,16 @@ output = {
         'std_dev': s['std'],
         'best_year': {'year': s['best'][0],  'return': s['best'][1]},
         'worst_year': {'year': s['worst'][0], 'return': s['worst'][1]},
-        'positive_years_out_of_50': s['pos_years'],
-        'value_of_100k_after_50_years': s['final_100k'],
+        f'positive_years_out_of_{N_YEARS}': s['pos_years'],
+        f'value_of_100k_after_{N_YEARS}_years': s['final_100k'],
         'annual_returns': s['returns'],
     }
     for name, s in summary.items()
 }
-with open('/home/user/Default/sp500_returns_analysis.json', 'w') as f:
+_suffix = '' if END_YEAR == 2025 else f'_{YEARS[0]}_{END_YEAR}'
+_outfile = f'/home/user/Default/sp500_returns_analysis{_suffix}.json'
+with open(_outfile, 'w') as f:
     json.dump(output, f, indent=2)
 
-print("  Full results saved to: sp500_returns_analysis.json")
+print(f"  Full results saved to: {os.path.basename(_outfile)}")
 print(SEP)
